@@ -427,9 +427,59 @@ class DxlChain:
                     self.set_reg(iid,name,val) # if writable set it
 
     def dump(self):
-        """Obtain the motors chain configuration and dumps it on stdout"""
         conf=self.get_configuration()
-        print json.dumps(conf,indent=4,sort_keys=False)
+        dmp = json.dumps(conf,indent=4,sort_keys=False)
+        print dmp
+        return dmp
+
+    def get_configuration(self):
+        """ Gets the current configuration for all motors connected """
+        self.get_motor_list(broadcast=broadcast)
+
+        d = OrderedDict()
+
+        for (id, m) in self.motors.items():
+            dd = OrderedDict()
+            d[id] = dd
+
+            length, dump = self._get_configuration(m, id)
+
+            addr = 0
+            for value in dump:
+                name, length = m.getNameByAddr(addr)
+                if name is not None:
+                    dd[name] = m.registers[name].fromdxl([dump[addr], dump[addr + 1]])
+                addr = addr + 1
+
+        return d
+
+    def _get_configuration(self, motor, id):
+        with self.lock:
+            """ Reads all memory addresses of a certain motor """
+            offset = 0x00
+            length = self._getRegSize(motor)
+
+            checksumed_data = [id, 4, 2, offset, length]
+
+            data = "".join(map(chr, [0xFF, 0xFF] + checksumed_data + [self.checksum(checksumed_data)]))
+            self.port.write(data)
+            self.port.flushOutput()
+
+            rec = self._recv()
+
+            return length, rec[1]
+
+    def _get_reg_size(self, motor):
+        """ Gets the register size of a certain motor type as defined in dxlmotors """
+
+        minaddr = 0x00
+        maxaddr = 0x00
+        for reg in motor.registers:
+            addr = motor.registers[reg].address + (motor.registers[reg].size - 1)
+            if maxaddr < addr:
+                maxaddr = addr
+
+        return maxaddr - minaddr
 
     def get_motors(self,ids=None):
         """Return the list of all motors ids, or a specific set, or a single id"""        
