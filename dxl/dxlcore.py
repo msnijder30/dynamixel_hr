@@ -61,7 +61,12 @@ class DxlElement(object):
         mcls=cls.DxlModels[model_number]
         return mcls()
         
+    def getNameByAddr(self, addr):
+        for name in self.registers:
+            if self.registers[name].address == addr:
+                return name, self.registers[name].size
 
+        return None, None
         
     def getRegisterCmd(self,name):
         if not name in self.registers.keys():
