@@ -375,20 +375,6 @@ class DxlChain:
             delay=time.time()-start
             logging.debug("get_motor_list delay: %f"%delay)
             return l
-
-    def get_configuration(self,broadcast=True):
-        """Obtain the list of motors on a chain, read and return their full configuration"""
-        self.get_motor_list(broadcast=broadcast)
-        start=time.time()
-        d=OrderedDict()
-        for (id,m) in self.motors.items():
-            dd=OrderedDict()
-            d[id]=dd
-            for (name,r) in m.registers.items():
-                dd[name]=self.get_reg(id,name)
-        delay=time.time()-start
-        logging.debug("get_configuration reg delay: %f"%delay)
-        return d
         
     def set_configuration(self,conf):
         """Compare the motors available on a chain to those specified in the provided configuration, silently try to set all registers, generates an exception if there is a mismatch"""
